@@ -1,86 +1,28 @@
+# Create a TCP/IP socket for a client
+import socket
 
-import smtplib,socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-def setup_server():
-    
-    server = smtplib.SMTP(host='smtp.gmail.com', port=587)
-    server.starttls()
-    return server
-
-def login(server):
-    address = input("Sender Email : ").strip()
-    password = input("App Password (16-char): ").strip() 
-    server.login(address,password)
-    return address
-
-def create_email(address):
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-    
-    recipient_email = input("Enter recipient email: ").strip()
-    msg = MIMEMultipart()       
-
-  
-    msg['From'] = address
-    msg['To'] = recipient_email
-    msg['Subject']=input("Enter subject of the message: ").strip()
-
-    message = input("Enter message: ").strip()
-
-   
-    msg.attach(MIMEText(message, 'plain'))
-    attach = input( "Would you like to send an attachment ? Yes/No : ").strip()
-    attaching = False
-    num_attach=0
-    if attach.lower()=='yes':
-        attaching = True
-        num_attach = int(input("Enter number of attachments :"))
-    i = 0
-    while i<num_attach:
-        if attaching:
-            add_attachment(msg)    
-        else:
-            print("No attachment added")
-        i+=1
-    return msg
-
-def send(server,msg):
-    from email import message
-    
-    server.send_message(msg)
-    del msg
-    print("Successful")
-
-def add_attachment(msg):
-    from email.mime.base import MIMEBase
-    from email import encoders
-
-    # open the file to be sent 
-    filename = input("Enter path of the attachment file: ").strip()
-    file = open(filename, "rb")
-    
-    
-    attachment = MIMEBase('application', 'octet-stream')
-  
-    attachment.set_payload((file).read())
-    
-  
-    encoders.encode_base64(attachment)
-    attachment.add_header(input("Add header to the attachment: ").strip(),"client")
-    
-   
-    msg.attach(attachment)
-    print("Attachment has been added")
+# connect the socket to the port where the server is listening
+server_address = ('localhost', 10001)
+print('connecting to %s port %s' % server _address)
+sock.connect(server_address)
 
 try:
-    server = setup_server()
-    address  = login(server)
-    msg = create_email(address)
-    send(server,msg)
-except socket.gaierror:
-    print("No Internet Connection")
-except smtplib.SMTPAuthenticationError :
- 
-    print("Authentication Failed")
-except smtplib.SMTPRecipientsRefused :
-   print("Invalid Recipient Email")
+    # send data
+    message = 'New message. Please repeat also.'
+    print('sending "%s"' % message)
+    sock.sendall(bytes(message, 'utf-8'))
+
+    # look for a response back
+    amount_received = 0
+    amount_expected = len(message)
+
+    while amount_received < amount_expected:
+        data = sock.recv(1600)
+        amount_received += len(data)
+        print('received "%s"' % data)
+
+finally:
+    print('closing client')
+    sock.close()
